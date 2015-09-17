@@ -1,23 +1,143 @@
-import praw, re, time
+from pprint import pprint
+import praw
+import re
+import time
+
+class NeedsConfirmation(object):
+	#2 constructors - 1 is creating when someone requests Gifted, one is importing from thread
+	#TODO this
+	def __init__(self, arg):
+		self.arg = arg
+		
+
+class Flair(object):
+	def __init__(self, is_gifted, is_grabbed, num_grabbed):
+		self.is_gifted = is_gifted
+		self.is_grabbed = is_grabbed
+		self.num_grabbed = num_grabbed
+	def is_gifted(self):
+		return self.is_gifted
+	def is_grabbed(self):
+		return self.is_grabbed
+	def num_grabbed(self):
+		return self.num_grabbed
+	def gen_flair_text(self):
+		if self.is_gifted and self.is_grabbed:
+			return "Gifted | " + self.gen_just_grabbed_num()
+		if self.is_gifted and not self.is_grabbed:
+			return "Gifted"
+		if self.is_grabbed and not self.is_gifted:
+			return self.gen_just_grabbed_num()
+	def gen_just_grabbed_num(self):
+		if not self.is_grabbed:
+			return ""
+		if self.num_grabbed == 0:
+			return "Grabbed"
+		else:
+			return "Grabbed " + str(num_grabbed)
+	def gen_flair_class(self):
+		if self.is_grabbed and self.is_gifted:
+			return "giftedgrabbed"
+		if self.is_grabbed and not self.is_gifted:
+			return "grabbed"
+		if self.is_gifted and not self.is_grabbed:
+			return "gifted"
+	def can_upgrade_to(self, higher_flair):
+		#where higher_flair is another Flair object that is supposed to be higher
+		if isinstance(higher_flair,EmptyFlair):
+			return False
+		if self.is_gifted and not higher_flair.is_gifted:
+			return False
+		if self.is_grabbed and not higher_flair.is_grabbed:
+			return False
+		if self.num_grabbed > higher_flair.num_grabbed:
+			return False
+		return True
+
+class EmptyFlair(Flair):
+	def __init__(self):
+		super(EmptyFlair, self).__init__(False,False,0)
+	def gen_flair_text(self):
+		return ""
+	def can_upgrade_to(self, higher_flair):
+		return True
+
+class CustomFlair(Flair):
+	def __init__(self, is_gifted, is_grabbed, num_grabbed, custom_text, custom_class):
+		super(CustomFlair, self).__init__(is_gifted, is_grabbed, num_grabbed)
+		self.custom_text = custom_text
+		self.custom_class = custom_class #the CSS flair class the user flair will use. should obtain from current flair class.
+	#def gen_flair_text(self):
+	#an augmented version of the Flair class's gen_flair_text function
+	def gen_flair_text(self):
+		return self.custom_text + " | " + super.gen_flair_text()
+	def gen_flair_class(self):
+		return self.custom_class
+
+def get_numbers(text):
+	i = True
+	ret = ""
+	n=1
+	while i and n < len(text):
+		try:
+			x = int(text[-(n+1):-n])
+		except ValueError:
+			i = False
+			return 0
+		ret += str(x)
+	return ret[::-1] #returns number as a STRING
+
+def text_to_Flair(text):
+	return Flair("Gifted" in text, "Grabbed" in text, int(get_numbers(text)))
+
+def text_to_custom_Flair(text,com):
+	return CustomFlair("Gifted" in text, "Grabbed" in text, int(get_numbers(text)), r.get_flair(subreddit,com.author).__getitem__(u'flair_text').split(' |')[0],r.get_flair(subreddit,com.author).__getitem__(u'flair_css_class'))
+
+def parse_comment_text_into_Flair(com):
+	text = com.body
+	lines = text.split('\n\n')
+	if len(lines[0]) > 4:
+		if lines[0][:2] == "**" and lines[0][-2:] == "**":
+			flair_text = lines[0][2:-2]
+			#convert to a flair class
+			wanted_flair = Flair('Gifted' in flair_text,'Grabbed' in flair_text, int(get_numbers(flair_text)))
+			current_flair = EmptyFlair()
+			try:
+				if not r.get_flair(subreddit,com.author).__getitem__(u'flair_css_class') in ["gifted","giftedgrabbed","grabbed",'']:
+					current_flair = text_to_Flair(r.get_flair(subreddit,com.author).__getitem__(u'flair_text'))
+				else:
+					current_flair = text_to_custom_Flair(r.get_flair(subreddit,com.author).__getitem__(u'flair_text'),com)
+			except Exception:
+				pass
+			listerino = [wanted_flair,current_flair]
+			return listerino
+		else:
+			#do some stuff to say it failed or whatever
+			pass
+	
+def reply_to_comment(com,stuff):
+	com.reply(stuff + "\n\n --- \n\n *I am a bot, and this message is automated. Please contact [charredgrass](https://www.reddit.com/user/charredgrass/) with any concerns, or the [moderators of the subreddit](https://www.reddit.com/message/compose?to=%%2Fr%%2FGiftofGames)")
+
+def yell_about_error(com,error):
+	poop = "Unknown error! Something went wrong."
+	if error == 'cheating_bastard':
+		poop = "Uh oh. Are you trying to change your flair to something it can't upgrade to? If so, contact the moderators. If not, contact the moderators."
+	reply_to_comment(com,poop)
 
 def main():
-	global GRABBED_REGEX, flair_thread, me, subreddit, r, confirm_thread
+	global subreddit, me
+	check_for_confirmation = [] #list of NeedsConfirmations
+	system_admin = ['charredgrass','charredbot']
+	system_moderator = ['Ai-Sama','TheAzureDragon','AakashMasani','Cyali']
+	#TODO import current checks for confirmation by reading comments on a post
+	keep_going = True
 	r = praw.Reddit('/u/charredgrass\'s Flair-inator for /r/Gift of Games')
-	r.login('CharredBot','',disable_warning=True)
-
-	flair_thread = r.get_submission(submission_id="3dswjr") #submission id of flair request thread
+	r.login('CharredBot','lampert',disable_warning=True)
+	flair_thread = r.get_submission(submission_id="3l861d") #submission id of flair request thread
 	me = r.get_redditor('CharredBot')
 	subreddit = r.get_subreddit("charredgrass")
-
-	confirm_thread = r.get_submission(submission_id="3g7ybp") #thread where mods confirm gifted
-
-	GRABBED_REGEX = re.compile("Grabbed ([0-9]*)")
-
-
-	keepGoing = True
-
-	while keepGoing:
-		#check flair_thread
+	confirm_thread = r.get_submission(submission_id="3g7ybp")
+	while (keep_going):
 		comments = flair_thread.comments
 		for commie in comments:
 			if commie.is_root:
@@ -25,97 +145,27 @@ def main():
 				for com in commie.replies:
 					if com.author == me:
 						rip = True
-				if not rip and com.body != "[deleted]":#make sure comment isn't removed, either.
-					give_flair(commie)
-					time.sleep(2)
-		#next, check confirm_thread
-		print("I swear I'm still doing something")
-
-#Comment Format
-
-# **Flair Needed**
-# 
-# [Single Gifted Thanks]
-#
-# [All Grabbed Thankses]
-
-def give_flair(com):
-	text = com.body
-	flair_gifted = None
-	flair_grabbed = None
-	thankses = []
-	flairneeded = ""
-	lines = text.split('\n\n')
-	if len(lines[0]) > 4:
-		if lines[0][:2] == "**" and lines[0][-2:] == "**":
-			#This means that it did something good
-			flair = lines[0][2:-2]
-			#ok check if the flair is legit
-			flair_gifted = "Gifted" in flair
-			flair_grabbed = "Grabbed" in flair
-			amt_grabbed = None
-			if flair_gifted and not is_user_gifted(com.author): #see if user is going from non-gifted to gifted
-				print("confirming with mods")
-				com.reply("You are upgrading your flair to Gifted, this requires moderator confirmation. Just wait, and your flair will be upgraded when the moderators get to it.")
-				#Here it should get the perma of 'com'. Reply with author's name, flair needed, and the perma, on 'confirm_thread'. Then it has to check that to see if the mods have done shit.
-				confirm_thread.add_comment(com.permalink + "\n\n" + com.author.name + " wants **" + flair + "** as their flair. Please verify, and update their flair manually. Pls.")
-				return True
-			if flair_grabbed:
-				try:
-					amt_grabbed = re.search(GRABBED_REGEX,flair).group(0)
-				except:
-					amt_grabbed = 1
-			else:
-				amt_grabbed = 0
-			if flair_gifted and not flair_grabbed and not user_has_custom_flair(com.author):
-				#check if user has a custom flair.
-				r.set_flair(subreddit,com.author,"Gifted","gifted")
-				print "Assigning gifted flair to " + com.author.name + "."
-				com.reply(get_response(flair))
-			elif flair_grabbed and not flair_gifted and not user_has_custom_flair(com.author):
-				if amt_grabbed > 1:
-					r.set_flair(subreddit,com.author,"Grabbed" + str(amt_grabbed), "grabbed")
-				else:
-					r.set_flair(subreddit,com.author,"Grabbed", "grabbed")
-				print "Assigning grabbed flair to " + com.author.name + "."
-				com.reply(get_response(flair))
-			elif flair_grabbed and flair_gifted and not user_has_custom_flair(com.author):
-				r.set_flair(subreddit,com.author,"Gifted | " + str(amt_grabbed), "giftedgrabbed")
-				print "Assigning GiftedGrabbed flair to " + com.author.name + "."
-				com.reply(get_response(flair))
-			elif user_has_custom_flair(com.author):
-				r.set_flair(subreddit,com.author,flair,get_user_cust_flair_class(com.author))
-				print "Assigning a custom flair class to " + com.author.name
-				com.reply(get_response(flair))
-		else:
-			if com.body != "[deleted]":
-				try:
-					com.reply("I think something went wrong. Make sure you've got the format correct, and contact \/u/charredgrass if necessary.")
-				except:
-					print("Error: unable to post comment. Was the parent deleted, or is reddit down?" + com.body)#will spam if there are removed comments
-			return False
-	else:
-		return False
-	#eh
-	pass
-
-#TODO finish this
-def user_has_custom_flair(person):
-	return not r.get_flair(subreddit,person).__getitem__(u'flair_css_class') in ["gifted","giftedgrabbed","grabbed",'',None]
-
-def get_user_cust_flair_class(person):
-	return r.get_flair(subreddit,person).__getitem__(u'flair_css_class')
-
-def is_user_gifted(person):
-	if r.get_flair(subreddit,person).__getitem__(u'flair_text') == '' or r.get_flair(subreddit,person).__getitem__(u'flair_text') == None:
-		return False
-	else:
-		return u'Gifted' in r.get_flair(subreddit,person).__getitem__(u'flair_text')
-
-def get_response(flair):
-	resp = "Setting flair to **" + flair + "**. Hopefully."
-	resp = resp + "\n\n" + "Contact \/u/charredgrass with any problems." + "\n\n" + "---\n\nI'm just a poor bot. Please don't hurt me."
-	return resp
+				if not rip and not commie.body == u'[deleted]':
+					lol = parse_comment_text_into_Flair(commie)
+					if lol != None:
+						wanted_flair = lol[0]
+						current_flair = lol[1]
+						if not current_flair.can_upgrade_to(wanted_flair):
+							yell_about_error(commie, 'cheating_bastard')
+						else:
+							#this means it worked, do more stuff here
+							r.set_flair(subreddit,commie.author,wanted_flair.gen_flair_text(), wanted_flair.gen_flair_class())
+							commie.reply('setting flair...')
+							comments = flair_thread.comments
+							time.sleep(3)
+							print("doin stuff")
+							#TODO check for moderator approval
+							pass
+					else:
+						commie.reply('hey stop it nerd, this is for cool kids requesting flair only')
+						comments = flair_thread.comments
+					time.sleep(4)
 
 if __name__ == '__main__':
 	main()
+
