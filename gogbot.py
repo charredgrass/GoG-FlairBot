@@ -3,10 +3,15 @@ import praw, re, time
 def set_config():
 	global username, password, thread_id, flair_sub
 	username = "CharredBot" #/u/charredbot
-	password = "" 
+	password = "lampert" 
 	thread_id = "3o6pya" #redd.it/3o6pya
 	flair_sub = "charredgrass" #/r/charredgrass
 
+def choose_random_giveaway_winner():
+	return r.get_redditor('charredgrass')
+
+def get_dank_meme():
+	return r.get_subreddit('me_irl')
 
 def get_num_grabbed(flair):
 	#flair should be a string
@@ -75,7 +80,7 @@ def main():
 	me = r.get_redditor(username)                                                                  
 	subreddit = r.get_subreddit(flair_sub)
 	print("if the bot hasnt blown up at this point its a good sign!")
-	print("I just started, I swear")
+	print("I just started, I swear!")
 	keepGoing = True
 	comments = flair_thread.comments
 	while keepGoing:
