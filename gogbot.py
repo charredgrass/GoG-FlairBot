@@ -32,7 +32,7 @@ def get_num_grabbed(flair):
 def flairify(com):
 	if r.get_flair(subreddit,com.author).__getitem__(u'flair_text') == None or r.get_flair(subreddit,com.author).__getitem__(u'flair_text') == "":
 		r.set_flair(subreddit,com.author,increment_grabbed(r.get_flair(subreddit,com.author).__getitem__(u'flair_text')),"grabbed")
-	if trigger in com.body: 
+	if trigger in com.body.lower(): 
 		if  u'gifted' in r.get_flair(subreddit,com.author).__getitem__(u'flair_css_class'):
 			r.set_flair(subreddit,com.author,increment_grabbed(r.get_flair(subreddit,com.author).__getitem__(u'flair_text')),"giftedgrabbed")
 		elif not u'grabbed' in r.get_flair(subreddit,com.author).__getitem__(u'flair_css_class'):
