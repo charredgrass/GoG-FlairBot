@@ -1,11 +1,12 @@
 import praw, re, time
 
 def set_config():
-	global username, password, thread_id, flair_sub
+	global username, password, thread_id, flair_sub, trigger
 	username = "CharredBot" #/u/charredbot
 	password = "lampert" 
 	thread_id = "3o6pya" #redd.it/3o6pya
 	flair_sub = "charredgrass" #/r/charredgrass
+	trigger = "upgrade my flair bitch"
 
 def choose_random_giveaway_winner():
 	return r.get_redditor('charredgrass')
@@ -30,9 +31,8 @@ def get_num_grabbed(flair):
 
 def flairify(com):
 	if r.get_flair(subreddit,com.author).__getitem__(u'flair_text') == None or r.get_flair(subreddit,com.author).__getitem__(u'flair_text') == "":
-		com.reply('Something went wrong. Contact the [bot creator](/u/charredgrass) or the [subreddit moderators](https://www.reddit.com/message/compose?to=%2Fr%2FGiftofGames) for help.')
-		return
-	if "dank memelord" in com.body: #                                                     <<<<<<<<<<        dont forget to change this back
+		r.set_flair(subreddit,com.author,increment_grabbed(r.get_flair(subreddit,com.author).__getitem__(u'flair_text')),"grabbed")
+	if trigger in com.body: 
 		if  u'gifted' in r.get_flair(subreddit,com.author).__getitem__(u'flair_css_class'):
 			r.set_flair(subreddit,com.author,increment_grabbed(r.get_flair(subreddit,com.author).__getitem__(u'flair_text')),"giftedgrabbed")
 		elif not u'grabbed' in r.get_flair(subreddit,com.author).__getitem__(u'flair_css_class'):
@@ -43,6 +43,8 @@ def flairify(com):
 	print('upgraded ' + com.author.name + '\'s flair ' + c.permalink)
 
 def increment_grabbed(text):
+	if text == None or text == "":
+		return "Grabbed"
 	numbar = get_num_grabbed(text)
 	backwards = text[::-1]
 	new_backwards = ""
@@ -80,7 +82,7 @@ def main():
 	me = r.get_redditor(username)                                                                  
 	subreddit = r.get_subreddit(flair_sub)
 	print("if the bot hasnt blown up at this point its a good sign!")
-	print("I just started, I swear!")
+	print("I just started, I swear")
 	keepGoing = True
 	comments = flair_thread.comments
 	while keepGoing:
