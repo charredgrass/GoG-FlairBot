@@ -2,10 +2,10 @@ import praw, re, time
 
 def set_config():
 	global username, password, thread_id, flair_sub, trigger
-	username = "CharredBot" #/u/charredbot
-	password = "lampert" 
-	thread_id = "3o6pya" #redd.it/3o6pya
-	flair_sub = "charredgrass" #/r/charredgrass
+	username = "My_Flair_Lady" #/u/charredbot
+	password = "" 
+	thread_id = "" #redd.it/3o6pya
+	flair_sub = "" #/r/charredgrass
 	trigger = "upgrade my flair bitch"
 
 def choose_random_giveaway_winner():
@@ -85,6 +85,8 @@ def main():
 	print("I just started, I swear")
 	keepGoing = True
 	comments = flair_thread.comments
+	flair_thread.replace_more_comments()
+	time.sleep(10)
 	while keepGoing:
 		for com in comments:
 			if com.is_root:
@@ -95,6 +97,7 @@ def main():
 				if not rip and com.body != "[deleted]":
 					flairify(com)
 					print("taking a 10 second nap so i dont explode")
+					flair_thread.replace_more_comments()
 					time.sleep(10)
 					break
 		comments = flair_thread.refresh().comments
