@@ -5,8 +5,7 @@ def set_config():
 	username = "My_Flair_Lady" #/u/charredbot
 	password = "" 
 	thread_id = "" #redd.it/3o6pya
-	flair_sub = "" #/r/charredgrass
-	trigger = "upgrade my flair bitch"
+	flair_sub = "GiftofGames" #/r/charredgrass
 
 def choose_random_giveaway_winner():
 	return r.get_redditor('charredgrass')
@@ -32,14 +31,22 @@ def get_num_grabbed(flair):
 def flairify(com):
 	if r.get_flair(subreddit,com.author).__getitem__(u'flair_text') == None or r.get_flair(subreddit,com.author).__getitem__(u'flair_text') == "":
 		r.set_flair(subreddit,com.author,increment_grabbed(r.get_flair(subreddit,com.author).__getitem__(u'flair_text')),"grabbed")
-	if trigger in com.body.lower(): 
-		if  u'gifted' in r.get_flair(subreddit,com.author).__getitem__(u'flair_css_class'):
-			r.set_flair(subreddit,com.author,increment_grabbed(r.get_flair(subreddit,com.author).__getitem__(u'flair_text')),"giftedgrabbed")
-		elif not u'grabbed' in r.get_flair(subreddit,com.author).__getitem__(u'flair_css_class'):
-			r.set_flair(subreddit,com.author,increment_grabbed(r.get_flair(subreddit,com.author).__getitem__(u'flair_text')),r.get_flair(subreddit,com.author).__getitem__(u'flair_css_class'))
+	if "grabbed" in com.body.lower():
+		iterations = 1
+		if com.body.lower().find('grabbed') == -1:
+			iterations = 1
+		elif com.body.lower().find('grabbed ') == -1:
+			iterations = 1
 		else:
-			r.set_flair(subreddit,com.author,increment_grabbed(r.get_flair(subreddit,com.author).__getitem__(u'flair_text')),"grabbed")
-	c = com.reply('i upgraded ur flair nerdface')
+			iterations = last_digits(r.get_flair(subreddit,com.author).__getitem__(u'flair_text'))
+		for x in range(iterations):	
+			if  u'gifted' in r.get_flair(subreddit,com.author).__getitem__(u'flair_css_class'):
+				r.set_flair(subreddit,com.author,increment_grabbed(r.get_flair(subreddit,com.author).__getitem__(u'flair_text')),"giftedgrabbed")
+			elif not u'grabbed' in r.get_flair(subreddit,com.author).__getitem__(u'flair_css_class'):
+				r.set_flair(subreddit,com.author,increment_grabbed(r.get_flair(subreddit,com.author).__getitem__(u'flair_text')),r.get_flair(subreddit,com.author).__getitem__(u'flair_css_class'))
+			else:
+				r.set_flair(subreddit,com.author,increment_grabbed(r.get_flair(subreddit,com.author).__getitem__(u'flair_text')),"grabbed")
+	c = com.reply('Your flair has been updated. \n Problems? Message the moderators. Compliments? Message \\/u/charredgrass or talk with him [here](http://steamcommunity.com/id/charredGrass/)' )
 	print('upgraded ' + com.author.name + '\'s flair ' + c.permalink)
 
 def increment_grabbed(text):
@@ -105,3 +112,22 @@ def main():
 
 if __name__ == '__main__':
 	main()
+
+def last_digits(words):
+	backwords = words[::-1] #play on words
+	die = False
+	ret = ""
+	index = 0
+	while not die:
+		if (backwords[index] == " "):
+			die = True
+		else:
+			try:
+				poop = int(backwords[index])
+				ret += str(poop)
+			except ValueError:
+				die = True
+		index += 1
+	if (ret == ""):
+		return 0
+	return int(ret[::-1])
