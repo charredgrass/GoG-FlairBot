@@ -4,7 +4,8 @@ from pprint import pprint
 def set_config():
 	global username, password, thread_id, flair_sub
 	username = "charredbot" #/u/charredbot
-	password = "" 
+	password = "lampert" 
+	thread_id = "3su2kk" #redd.it/3o6pya
 	flair_sub = "charredgrass" #/r/charredgrass
 
 def get_flair(person):
